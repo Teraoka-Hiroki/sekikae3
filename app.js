@@ -84,6 +84,28 @@ function setupEventListeners() {
     fileInput.addEventListener('change', handleFileUpload);
   }
 
+  // Download Template Button
+  const btnDownload = document.getElementById('btnDownloadTemplate');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', (e) => {
+      if (window.location.protocol === 'file:') {
+        e.preventDefault();
+        try {
+          if (window.XLSX) {
+            const ws = XLSX.utils.json_to_sheet(DEFAULT_STUDENT_DATA);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "生徒名簿");
+            XLSX.writeFile(wb, "student.xlsx");
+            return;
+          }
+        } catch (err) {
+          console.warn("Fallback to link navigation:", err);
+        }
+        window.location.href = './student.xlsx';
+      }
+    });
+  }
+
   // Load Sample Data Button
   const btnSample = document.getElementById('btnLoadSample');
   if (btnSample) {
