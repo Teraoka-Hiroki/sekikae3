@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>席替えアプリ | 海星高校 自由探究ゼミ＠K</title>
+  
+  <!-- SEO & Meta -->
+  <meta name="description" content="K-Meansクラスタリングと焼きなまし法（Simulated Annealing）を活用した、機械学習・数理最適化に基づくクラス座席自動決定アプリケーション。">
+  <meta name="keywords" content="席替え, 席替えアプリ, 機械学習, K-Means, 焼きなまし法, 組合せ最適化, 数理モデル, クラス編成">
+
+  <!-- ===== ローカル同梱ライブラリ（オフライン・ダブルクリック起動対応） ===== -->
+
+  <!-- Tailwind CSS (ローカル同梱 - CDN不要) -->
+  <script src="./libs/tailwind.js"></script>
+  <script>
+    if (window.tailwind) {
+      tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            /* ニュートラルパレット（ダークグレー系） */
+            slate: {
+              50: '#f7f8fa', 100: '#eceef1', 200: '#d8dce2', 300: '#b8bfca',
+              400: '#9aa1ad', 500: '#6f7684', 600: '#565d6a', 700: '#3a4150',
+              800: '#242a35', 850: '#1d2129', 900: '#171a20', 950: '#0f1115'
+            },
+            cyan: {
+              50: '#f0f5fe', 100: '#dbe7fd', 200: '#bcd2fb', 300: '#8fb3f8',
+              400: '#6ba0f5', 500: '#4f8ef7', 600: '#3b73d9', 700: '#2f5cb0',
+              800: '#274a8c', 900: '#203c6d', 950: '#152542'
+            },
+            teal: {
+              300: '#8fb3f8', 400: '#6ba0f5'
+            },
+            blue: {
+              400: '#6ba0f5', 500: '#4f8ef7', 600: '#3b73d9'
+            },
+            gray: {
+              400: '#9aa1ad', 500: '#6f7684'
+            }
+          },
+          fontFamily: {
+            display: ['"Inter"', '"Noto Sans JP"', 'sans-serif']
+          }
+        }
+      }
+      };
+    }
+  </script>
+
+  <!-- FontAwesome Icons (ローカル同梱) -->
+  <link rel="stylesheet" href="./libs/fontawesome/all.min.css">
+  
+  <!-- KaTeX for formatted math rendering (ローカル同梱) -->
+  <link rel="stylesheet" href="./libs/katex.min.css">
+  <script defer src="./libs/katex.min.js"></script>
+  <script defer src="./libs/auto-render.min.js" onload="if(window.renderMathInElement) renderMathInElement(document.body);"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="./style.css">
+
+  <!-- External JS Libraries (ローカル同梱 - CDN不要) -->
+  <!-- SheetJS for Excel/CSV parsing -->
+  <script src="./libs/xlsx.full.min.js"></script>
+  <!-- Chart.js for data visualization -->
+  <script src="./libs/chart.umd.min.js"></script>
+  <!-- Canvas Confetti for victory effect -->
+  <script src="./libs/confetti.browser.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Printable Header (Visible only when printing) -->
+  <div class="hidden print-header print-black-text">
+    <h1 class="text-2xl font-medium">クラス座席配置表</h1>
+    <p class="text-sm text-slate-600">作成日: <span id="printDate"></span> | 席替えアプリ (海星高校 自由探究ゼミ＠K)</p>
+  </div>
+
+  <!-- Header Section -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- App Title (Left) -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center">
+          <i class="fas fa-chair text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-semibold text-white">
+            席替えアプリ
+          </h1>
+          <p class="text-xs text-slate-400">機械学習 (K-Means) & 数理最適化 (焼きなまし法) によるクラス最適配置</p>
+        </div>
+      </div>
+
+      <!-- Profile Logo Badge (Right - EXACT REQUIRED SNIPPET) -->
+      <!-- プロフィール -->
+      <div class="flex items-center mt-6 md:mt-0 bg-slate-900 p-3 pr-6 rounded-full border border-slate-700 ml-4">
+          <img src="./kaisei_logo.jpg" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22%3E%3Crect width=%22120%22 height=%22120%22 rx=%2260%22 fill=%22%230f172a%22/%3E%3Ctext x=%2260%22 y=%2272%22 font-size=%2248%22 fill=%22%23fff%22 text-anchor=%22middle%22 font-family=%22sans-serif%22%3EK%3C/text%3E%3C/svg%3E'" alt="Profile" class="w-12 h-12 rounded-full object-cover border border-slate-600">
+          <div class="text-right ml-4">
+              <p class="font-medium text-sm text-slate-200">海星高校 自由探究ゼミ＠K</p>
+              <p class="text-xs text-slate-400 leading-relaxed mt-1">「自分が価値を置くものに向かって<br>こつこつ努力する姿ほど<br>素晴らしいものはない」</p>
+          </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- Section 1: Data Import & Roster Preview -->
+    <section class="glass-panel p-6 rounded-2xl shadow-2xl space-y-6 no-print">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-100 flex items-center gap-2">
+            <i class="fas fa-file-excel text-emerald-400"></i> Step 1. 生徒名簿（データ）の読み込み
+          </h2>
+          <p class="text-sm text-slate-300 mt-1 leading-relaxed">
+            エクセル(`.xlsx`, `.xls`) または CSVファイルを読み込みます。生徒特性（国語・数学等の学力、積極性・協調性等の性格評価）の列数や生徒人数は自動適応されます。
+          </p>
+        </div>
+        <button id="btnLoadSample" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-white font-medium text-xs rounded-lg transition-all flex items-center gap-2 cursor-pointer shrink-0">
+          <i class="fas fa-magic"></i> サンプル名簿 (student.xlsx) を読み込む
+        </button>
+      </div>
+
+      <!-- File Dropzone -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <div class="md:col-span-1">
+          <label class="block border-2 border-dashed border-slate-700 hover:border-cyan-500 bg-slate-900/50 hover:bg-slate-900 rounded-xl p-6 text-center cursor-pointer transition-all">
+            <i class="fas fa-cloud-upload-alt text-3xl text-cyan-400 mb-2"></i>
+            <span class="block text-xs font-medium text-slate-200">ファイルをアップロード</span>
+            <span class="block text-[11px] text-slate-400 mt-1">.xlsx, .xls, .csv に対応</span>
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
+          </label>
+        </div>
+
+        <!-- Loaded Summary Badge -->
+        <div class="md:col-span-2 flex flex-wrap items-center justify-between bg-slate-900/60 p-4 rounded-xl border border-slate-800 gap-4">
+          <div>
+            <span class="text-xs text-slate-300">現在の名簿状態</span>
+            <div class="flex items-center gap-3 mt-1">
+              <span id="studentCountBadge" class="px-3 py-1 bg-cyan-500/20 text-cyan-300 font-medium text-xs rounded-full border border-cyan-500/30">
+                0名
+              </span>
+              <span class="text-xs text-slate-300">
+                <i class="fas fa-layer-group text-slate-400 mr-1"></i> 特性次元数: <span class="font-medium text-cyan-400">6クラスタ分離</span>
+              </span>
+            </div>
+          </div>
+
+          <button id="btnMathExplanation" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-normal rounded-lg border border-slate-700 transition cursor-pointer flex items-center gap-2">
+            <i class="fas fa-calculator text-cyan-400"></i> 数理モデル解説を表示
+          </button>
+        </div>
+      </div>
+
+      <!-- Collapsible Roster Preview Table -->
+      <details class="group bg-slate-900/40 rounded-xl border border-slate-800/80 overflow-hidden">
+        <summary class="px-4 py-3 cursor-pointer text-xs font-medium text-slate-300 hover:bg-slate-800/50 flex justify-between items-center">
+          <span><i class="fas fa-table mr-2 text-cyan-400"></i> 読み込まれた生徒名簿一覧とクラスタ割り当てを確認</span>
+          <i class="fas fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        <div class="p-4 overflow-x-auto max-h-64">
+          <table class="min-w-full divide-y divide-slate-800">
+            <thead id="rosterTableHead" class="bg-slate-900"></thead>
+            <tbody id="rosterTableBody" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- Section 2: Classroom Configuration & Optimization Controls -->
+    <section class="glass-panel p-6 rounded-2xl shadow-2xl space-y-6 no-print">
+      <div class="border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-100 flex items-center gap-2">
+            <i class="fas fa-sliders text-cyan-400"></i> Step 2. 教室配置と固定席の設定
+          </h2>
+          <p class="text-sm text-slate-300 mt-1 leading-relaxed">
+            教室の列数を指定し、下記の各席カードの「生徒No:」に固定したい生徒番号を入力すると、その生徒が固定席になります。
+          </p>
+        </div>
+      </div>
+
+      <!-- Inputs Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Column Count Input -->
+        <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 space-y-2">
+          <label class="block text-xs font-medium text-slate-300">
+            <i class="fas fa-border-all text-cyan-400 mr-1"></i> 教室の列数 (横の席数)
+          </label>
+          <div class="flex items-center gap-3">
+            <input type="number" id="gridColsInput" value="6" min="1" max="12" class="w-24 bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded-lg px-3 py-2 text-sm font-medium text-center text-cyan-300 focus:outline-none">
+            <span class="text-xs text-slate-400">列（行数は自動計算）</span>
+          </div>
+        </div>
+
+        <!-- Fixed Seat List Status -->
+        <div class="md:col-span-2 bg-slate-900/70 p-4 rounded-xl border border-slate-800 space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="block text-xs font-medium text-slate-300">
+              <i class="fas fa-thumbtack text-amber-400 mr-1"></i> 現在の固定席 (ピン留め) 一覧
+            </label>
+            <span class="text-[11px] text-slate-400">※各席の「生徒No:」入力欄またはピンアイコンで指定</span>
+          </div>
+          <div id="fixedSeatList" class="flex flex-wrap gap-2 pt-1 min-h-[32px]">
+            <p class="text-xs text-slate-400 italic">固定された席はありません</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Selector Tabs -->
+      <div class="space-y-4">
+        <div class="flex flex-wrap gap-3 border-b border-slate-800 pb-3">
+          <button id="tabRandom" class="px-6 py-3 rounded-lg font-medium text-sm bg-cyan-500 text-white transition-all cursor-pointer flex items-center gap-2">
+            <i class="fas fa-random"></i> タブ1: 異質分散配置 (ランダム分散)
+          </button>
+          <button id="tabHomogeneous" class="px-6 py-3 rounded-lg font-medium text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all cursor-pointer flex items-center gap-2">
+            <i class="fas fa-users text-emerald-400"></i> タブ2: 同質グループ配置 (同質配置)
+          </button>
+        </div>
+
+        <!-- Active Mode Description Banner -->
+        <div id="modeDescription" class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-sm text-slate-200 leading-relaxed">
+          <span class="text-cyan-400 font-normal">【異質分散配置 (ランダム分散)】</span>: 学力や性格の特性が互いに異なる生徒同士が隣り合うように、K-Meansと焼きなまし法で離隔距離を最大化します。固定指定された生徒の席は動かしません。
+        </div>
+      </div>
+
+      <!-- Control Buttons Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
+        <div class="flex flex-wrap gap-3">
+          <button id="btnStartOptimize" class="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-white font-semibold text-sm rounded-lg transition-all cursor-pointer flex items-center gap-2">
+            <i class="fas fa-play"></i> 最適化開始
+          </button>
+          
+          <button id="btnResetSeats" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-normal text-xs rounded-xl border border-slate-700 transition cursor-pointer flex items-center gap-2">
+            <i class="fas fa-rotate-left"></i> リセット
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button id="btnPrintLayout" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-normal text-xs rounded-xl border border-slate-700 transition cursor-pointer flex items-center gap-2">
+            <i class="fas fa-print text-cyan-400"></i> 印刷 / PDF出力
+          </button>
+          <button id="btnExportCSV" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-normal text-xs rounded-xl border border-slate-700 transition cursor-pointer flex items-center gap-2">
+            <i class="fas fa-download text-emerald-400"></i> CSV出力
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Interactive Classroom Grid View -->
+    <section class="glass-panel p-6 rounded-2xl shadow-2xl space-y-6 printable-area">
+      <!-- Classroom Blackboard Front Indicator -->
+      <div class="classroom-front w-full rounded-xl py-3 text-center shadow-inner">
+        <span class="text-xs font-medium tracking-[0.35em] text-amber-300 uppercase">
+          <i class="fas fa-chalkboard mr-2"></i> 【 黒 板 ・ 教 卓 （ 前 方 ） 】
+        </span>
+      </div>
+
+      <!-- Seating Grid Container -->
+      <div id="classroomGrid" class="grid gap-4 py-2">
+        <!-- Dynamically rendered seat cards with direct student No. input fields -->
+      </div>
+    </section>
+
+    <!-- Section 4: Analytics Charts -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6 no-print">
+      <div class="glass-panel p-6 rounded-2xl shadow-2xl space-y-4">
+        <h3 class="text-sm font-medium text-slate-200 flex items-center gap-2">
+          <i class="fas fa-chart-pie text-cyan-400"></i> K-Means 6クラスタ構成比率
+        </h3>
+        <div class="h-64 relative">
+          <canvas id="chartClusterDist"></canvas>
+        </div>
+      </div>
+
+      <div class="glass-panel p-6 rounded-2xl shadow-2xl space-y-4">
+        <h3 class="text-sm font-medium text-slate-200 flex items-center gap-2">
+          <i class="fas fa-chart-bar text-emerald-400"></i> クラスタ別 特性評価平均比較
+        </h3>
+        <div class="h-64 relative">
+          <canvas id="chartClusterTraits"></canvas>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Pachinko-style optimization overlay -->
+  <div id="progressModal" class="fixed inset-0 pachinko-overlay flex items-center justify-center z-50 hidden no-print p-3">
+    <div class="pachinko-cabinet" id="pachinkoCabinet">
+      <div class="pachinko-leds" id="pachinkoLeds" aria-hidden="true"></div>
+
+      <div class="pachinko-inner">
+        <div class="pachinko-marquee">
+          <span class="pachinko-brand">CR 席替え FEVER</span>
+          <span class="pachinko-sub">テラオカ電子</span>
+        </div>
+
+        <div class="pachinko-lcd">
+          <div id="pachinkoLcdTitle" class="pachinko-lcd-title">ヘソ回転中</div>
+          <p id="progressStatus" class="pachinko-lcd-status">焼きなまし法（Simulated Annealing）を計算中</p>
+        </div>
+
+        <div class="pachinko-reels" id="pachinkoReels" aria-label="図柄リール">
+          <div class="reel spinning" data-reel="0"><span class="reel-face">7</span></div>
+          <div class="reel spinning" data-reel="1"><span class="reel-face">7</span></div>
+          <div class="reel spinning" data-reel="2"><span class="reel-face">7</span></div>
+        </div>
+
+        <div class="pachinko-board-wrap">
+          <canvas id="pachinkoCanvas" width="320" height="280"></canvas>
+        </div>
+
+        <div class="pachinko-stats">
+          <div>
+            <span class="label">回転</span>
+            <span id="progressPercent" class="value gold">0%</span>
+          </div>
+          <div>
+            <span class="label">温度 T</span>
+            <span id="tempVal" class="value">100.0</span>
+          </div>
+          <div>
+            <span class="label">評価</span>
+            <span id="scoreVal" class="value cyan">--</span>
+          </div>
+        </div>
+
+        <div class="pachinko-gauge-wrap">
+          <span class="gauge-label">出玉ゲージ</span>
+          <div class="pachinko-gauge">
+            <div id="progressBar" class="pachinko-gauge-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="jackpotBanner" class="jackpot-banner hidden" aria-live="assertive">
+        <div class="jackpot-flash">大当たり</div>
+        <div class="jackpot-sub">FEVER TIME</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mathematical Model Explanation Modal (Fully formatted readable math explanations) -->
+  <div id="mathModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden no-print p-4 overflow-y-auto">
+    <div class="glass-panel p-8 rounded-2xl max-w-3xl w-full my-8 space-y-6 border border-slate-700 shadow-2xl relative">
+      <button id="btnCloseMathModal" class="absolute top-6 right-6 text-slate-400 hover:text-white text-xl cursor-pointer">
+        <i class="fas fa-times"></i>
+      </button>
+
+      <div class="border-b border-slate-800 pb-4">
+        <h3 class="text-xl font-medium text-white flex items-center gap-2">
+          <i class="fas fa-square-root-variable text-cyan-400"></i> 数理モデルと最適化アルゴリズムの解説
+        </h3>
+        <p class="text-sm text-slate-300 mt-1">本アプリで採用している多次元クラスタリングおよび組合せ最適化の理論解説</p>
+      </div>
+
+      <div class="space-y-6 text-sm text-slate-200 leading-relaxed max-h-[65vh] overflow-y-auto pr-2">
+        
+        <!-- 1. Z-score Standard Scaling -->
+        <div class="space-y-2">
+          <h4 class="font-medium text-sm text-cyan-400 flex items-center gap-2">
+            1. 特性データの標準化 (Z-Score Normalization)
+          </h4>
+          <p>
+            各生徒の評価データ（国語・数学等の教科成績や積極性・協調性など）は、単位やばらつき（スケール）を均一に揃えるため、Zスコア標準化を行います。
+          </p>
+          <div class="bg-slate-900/90 p-3 rounded-lg font-mono text-cyan-300 text-center border border-slate-800 my-2">
+            標準化スコア (z) = (個人の評価値 - 全体の平均値 μ) / 標準偏差 σ
+          </div>
+          <p class="text-slate-300 text-xs">
+            これによって、満点が異なるテストや基準が違う指標であっても、対等な重みで多次元特性比較が可能になります。
+          </p>
+        </div>
+
+        <!-- 2. K-Means Clustering -->
+        <div class="space-y-2">
+          <h4 class="font-medium text-sm text-cyan-400 flex items-center gap-2">
+            2. K-Means クラスタリング (K = 6)
+          </h4>
+          <p>
+            生徒データは多次元空間上の特徴ベクトルとして表現されます。本アプリでは **K-Means++** アルゴリズムにより、生徒を似た特性を持つ6つのグループ（クラスタ）に分類します。
+          </p>
+          <div class="bg-slate-900/90 p-3 rounded-lg font-mono text-cyan-300 text-center border border-slate-800 my-2">
+            目的関数 J = ∑ (生徒の特性ベクトル - 所属クラスタの重心)² を最小化
+          </div>
+        </div>
+
+        <!-- 3. Distance Metric -->
+        <div class="space-y-2">
+          <h4 class="font-medium text-sm text-cyan-400 flex items-center gap-2">
+            3. 特性ベクトルの距離尺度 (Euclidean Distance)
+          </h4>
+          <p>
+            生徒Aと生徒Bの特性の類似度（差の大きさ）は、多次元ユークリッド距離で計算されます。
+          </p>
+          <div class="bg-slate-900/90 p-3 rounded-lg font-mono text-cyan-300 text-center border border-slate-800 my-2">
+            特性距離 d(A, B) = √ [ (国語差)² + (数学差)² + (理科差)² + ... + (協調性差)² ]
+          </div>
+        </div>
+
+        <!-- 4. Simulated Annealing -->
+        <div class="space-y-2">
+          <h4 class="font-medium text-sm text-cyan-400 flex items-center gap-2">
+            4. 焼きなまし法 (Simulated Annealing: SA)
+          </h4>
+          <p>
+            席替えの組み合わせ数は爆発的に増加するため（NP困難問題）、物理の金属冷却過程（焼きなまし）を模した確率的探索アルゴリズムを採用しています。
+          </p>
+          <div class="bg-slate-900/90 p-3 rounded-lg font-mono text-cyan-300 text-center border border-slate-800 my-2">
+            Metropolis受容確率 P = exp(- エネルギー変化 ΔE / 現在温度 T)
+          </div>
+          <p class="text-slate-300 text-xs">
+            計算初期（温度 T が高い状態）では改悪となる配置変換も一定確率で許容し、局所解（ローカルオプティマ）を回避しながら大域的最適解へ収束させます。
+          </p>
+        </div>
+
+        <!-- 5. Energy Function Formulation -->
+        <div class="space-y-2">
+          <h4 class="font-medium text-sm text-cyan-400 flex items-center gap-2">
+            5. 各配置モードの評価関数 (Energy / Cost Function)
+          </h4>
+          <ul class="list-disc list-inside space-y-2 pl-2">
+            <li>
+              <strong class="text-cyan-300 font-medium">タブ1（異質分散配置）:</strong>
+              隣り合う座席同士で「同じクラスタである場合のペナルティ」および「特性類似度が高い（距離が近い）場合のペナルティ」を最大化するようにエネルギーを最小化し、多様な生徒が混ざり合う配置を実現します。
+            </li>
+            <li>
+              <strong class="text-emerald-300 font-medium">タブ2（同質近接配置）:</strong>
+              同じクラスタの生徒同士が近くの席になり、特性距離が近い生徒が互いに近接するようにエネルギー関数を設計しています。
+            </li>
+          </ul>
+        </div>
+
+        <!-- 6. Constraints -->
+        <div class="space-y-2 border-t border-slate-800 pt-3">
+          <h4 class="font-medium text-sm text-amber-400 flex items-center gap-2">
+            6. 制約条件（固定席の完全保護）
+          </h4>
+          <p>
+            座席入力欄に生徒番号が指定された席は「固定席」としてロックされます。焼きなまし法のランダム交換ステップから完全に除外されるため、固定された生徒は絶対に移動せず、残りのフリー席に非固定の生徒が最適配置されます。
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Detail Inspect Modal -->
+  <div id="studentDetailModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden no-print p-4">
+    <div class="glass-panel p-6 rounded-2xl max-w-md w-full space-y-4 border border-slate-700 shadow-2xl relative">
+      <button id="btnCloseStudentModal" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg cursor-pointer">
+        <i class="fas fa-times"></i>
+      </button>
+      <div id="studentDetailBody"></div>
+    </div>
+  </div>
+
+  <!-- Footer Section -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-6 mt-12 no-print">
+    <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+      <p class="text-xs text-slate-400">
+        2026 自由探究ゼミ＠K All rights reserved.
+      </p>
+      <p class="text-xs text-slate-400">
+        席替えアプリ | 完全ブラウザ動作型フロントエンドWebアプリケーション
+      </p>
+    </div>
+  </footer>
+
+  <!-- App Main Engine Script -->
+  <script src="./app.js"></script>
+</body>
+</html>

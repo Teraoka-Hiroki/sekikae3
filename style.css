@@ -1,0 +1,301 @@
+/* ============================================================
+   席替えアプリ (sekikae2) — SIMPLE EDITION
+   読みやすさ最優先のミニマルテーマ
+   ============================================================ */
+
+/* ※オフライン・ローカル起動対応のため、Webフォントの@importは廃止。
+   システム標準フォントにフォールバックします。 */
+
+:root {
+  font-family: 'Inter', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* --- Neutral palette --- */
+  --bg:      #0f1115;
+  --panel:   #171a20;
+  --panel-2: #1d2129;
+  --line:    #2a2f3a;
+  --text:    #e6e8ec;
+  --subtle:  #9aa1ad;
+  --accent:  #4f8ef7;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+main p,
+footer p {
+  line-height: 1.8 !important;
+}
+
+/* 演出用の装飾は廃止 */
+.teraoka-message { text-shadow: none !important; }
+
+/* ---------- スクロールバー ---------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333945; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #414855; }
+
+/* ---------- パネル ---------- */
+.glass-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.glass-panel::before,
+.glass-panel::after { display: none; }
+
+.glass-card {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.glass-card:hover { border-color: #3a4150; }
+
+/* ---------- クラスタカラー ---------- */
+.cluster-badge-0 { background-color: rgba(244, 63, 94, 0.15); color: #fda4b4; border-color: rgba(244, 63, 94, 0.45); }
+.cluster-badge-1 { background-color: rgba(59, 130, 246, 0.15); color: #a5c8fd; border-color: rgba(59, 130, 246, 0.45); }
+.cluster-badge-2 { background-color: rgba(46, 201, 143, 0.15); color: #8ee9c6; border-color: rgba(46, 201, 143, 0.45); }
+.cluster-badge-3 { background-color: rgba(246, 180, 14, 0.15); color: #fde38a; border-color: rgba(246, 180, 14, 0.45); }
+.cluster-badge-4 { background-color: rgba(176, 110, 247, 0.15); color: #d7b6fb; border-color: rgba(176, 110, 247, 0.45); }
+.cluster-badge-5 { background-color: rgba(240, 111, 180, 0.15); color: #f9b3d8; border-color: rgba(240, 111, 180, 0.45); }
+
+.seat-border-0 { border-color: rgba(244, 63, 94, 0.55); }
+.seat-border-1 { border-color: rgba(59, 130, 246, 0.55); }
+.seat-border-2 { border-color: rgba(46, 201, 143, 0.55); }
+.seat-border-3 { border-color: rgba(246, 180, 14, 0.55); }
+.seat-border-4 { border-color: rgba(176, 110, 247, 0.55); }
+.seat-border-5 { border-color: rgba(240, 111, 180, 0.55); }
+
+/* ---------- 席カード ---------- */
+.seat-card {
+  transition: border-color 0.15s ease;
+  background: var(--panel-2) !important;
+  box-shadow: none !important;
+}
+.seat-card:hover {
+  transform: none;
+  border-color: #4a5264 !important;
+  box-shadow: none !important;
+}
+.seat-fixed {
+  background: #242a35 !important;
+  border-color: var(--accent) !important;
+  box-shadow: none !important;
+}
+
+.optimizing-glow { animation: none; opacity: 1; }
+
+.signboard-bulbs { display: none !important; }
+
+/* ---------- 黒板バー ---------- */
+.classroom-front {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.classroom-front::before,
+.classroom-front::after { display: none; }
+.classroom-front span { color: var(--subtle) !important; }
+
+
+/* ============================================================
+   最適化オーバーレイ（シンプルな進行状況ダイアログ）
+   ============================================================ */
+.pachinko-overlay {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.pachinko-cabinet {
+  position: relative;
+  width: min(380px, 94vw);
+  padding: 28px 24px 24px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.pachinko-cabinet::before { display: none; }
+.pachinko-cabinet.fever { animation: none; }
+
+/* 台の演出要素（LED・リール・盤面）は非表示 */
+.pachinko-leds,
+.pachinko-reels,
+.pachinko-board-wrap { display: none !important; }
+
+.pachinko-inner {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.pachinko-marquee {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.pachinko-brand {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-shadow: none;
+}
+.pachinko-sub {
+  font-size: 11px;
+  color: var(--subtle);
+}
+
+.pachinko-lcd {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  box-shadow: none;
+  text-align: center;
+}
+.pachinko-lcd-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+  text-shadow: none;
+  letter-spacing: 0.05em;
+  animation: none;
+}
+.pachinko-lcd-status {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--subtle);
+}
+
+.pachinko-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 12px;
+  text-align: center;
+}
+.pachinko-stats .label {
+  display: block;
+  font-size: 11px;
+  color: var(--subtle);
+  letter-spacing: 0.06em;
+}
+.pachinko-stats .value {
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.pachinko-stats .value.gold,
+.pachinko-stats .value.cyan { color: var(--accent); }
+
+.pachinko-gauge-wrap { margin-top: 12px; }
+.gauge-label {
+  display: block;
+  font-size: 11px;
+  color: var(--subtle);
+  margin-bottom: 4px;
+}
+.pachinko-gauge {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  padding: 0;
+  box-shadow: none;
+}
+.pachinko-gauge-fill {
+  position: relative;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: none;
+  transition: width 0.1s linear;
+  overflow: hidden;
+}
+.pachinko-gauge-fill::after { display: none; }
+
+/* ---------- 完了演出（控えめに） ---------- */
+.jackpot-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  overflow: hidden;
+}
+.jackpot-banner.hidden { display: none; }
+.jackpot-banner::before { display: none; }
+.jackpot-flash {
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
+  font-size: clamp(28px, 8vw, 40px);
+  color: var(--text);
+  text-shadow: none;
+  animation: none;
+  letter-spacing: 0.08em;
+}
+.jackpot-sub {
+  position: relative;
+  z-index: 1;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--subtle);
+  text-shadow: none;
+}
+.seat-jackpot { animation: seatSettle 0.4s ease both; }
+@keyframes seatSettle {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+body.pachinko-fever .seat-card { box-shadow: none; }
+
+/* ---------- 印刷スタイル ---------- */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print, header, footer, .control-panel, .math-modal, button {
+    display: none !important;
+  }
+  .printable-area {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .seat-card {
+    border: 1px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .seat-card * { color: #000000 !important; }
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .print-black-text { color: #000 !important; }
+}
